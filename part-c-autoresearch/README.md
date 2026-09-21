@@ -7,6 +7,10 @@ repeats — then writes its own final report. Built on the exact same
 tool-calling agent loop from Part A, specialized with two new tools for
 ML experimentation.
 
+## Demo video
+
+[Part C walkthrough & demo](https://youtu.be/VWeCEH-ycGY)
+
 ## Design, grounded in real prior art
 
 Researching [`awesome-autoresearch`](https://github.com/WecoAI/awesome-autoresearch)
