@@ -119,7 +119,7 @@ def run_bash(command: str) -> str:
         answer = input("Allow this command to run? [y/N] ").strip().lower()
     except EOFError:
         answer = "n"  # no stdin available (e.g. a non-interactive run) — fail closed, not crash
-    if answer not in {"y", "yes"}:
+    if answer.lower() not in {"y", "yes"}:
         return "User declined to run this command."
 
     try:
