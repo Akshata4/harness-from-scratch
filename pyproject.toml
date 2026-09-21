@@ -5,6 +5,8 @@ requires-python = ">=3.12"
 dependencies = [
     "openai>=3.16.2",
     "python-dotenv>=1.2.3",
+    "scikit-learn>=1.9.1",
+    "wandb>=0.30.0",
 ]
 
 [dependency-groups]
