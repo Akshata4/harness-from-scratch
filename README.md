@@ -6,6 +6,10 @@ tool-using agent loop with sandboxed execution and trajectory logging.
 Every stage lives in its own folder and is independently runnable, so the
 build-up can be demoed one stage at a time.
 
+## Demo video
+
+[Part A walkthrough & demo](https://youtu.be/GGK-tBdYchU)
+
 ## LLM backend
 
 The harness talks to the model through the OpenAI-compatible chat-completions

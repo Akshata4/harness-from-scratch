@@ -1,0 +1,42 @@
+# Cordis patch overlay: routes DeepSeek Harness through W&B Inference
+# instead of DeepSeek's own hosted API, reusing WANDB_API_KEY and
+# WANDB_PROJECT from the shell environment. Applied on every invocation via
+# `--patch dsh.patch.yml`.
+#
+# W&B Inference is OpenAI-compatible but needs the team/project identified
+# via an `openai-project` request header (not a client SDK kwarg, since
+# we're hitting the raw HTTP API) — without it, requests are rejected or
+# routed to the wrong project.
+#
+# maxTokens/contextWindow: DeepSeek-V3.1's real context is ~128K. W&B
+# Inference doesn't have OpenRouter's credit-preflight quirk (which needed
+# an artificially small cap), so these are sized close to the model's real
+# capability, not deliberately shrunk — an earlier attempt reused the small
+# OpenRouter-era numbers here and caused every reply to hit "output token
+# limit reached" with zero output, because the declared window was smaller
+# than a real session's accumulated prompt history.
+- id: llm-pi-ai
+  config:
+    providers:
+      wandb:
+        apiKeyEnv: WANDB_API_KEY
+        api: openai-completions
+        baseURL: https://api.inference.wandb.ai/v1
+        headers:
+          openai-project: !!js process.env.WANDB_PROJECT
+        models:
+          - id: deepseek-ai/DeepSeek-V3.1
+            maxTokens: 8192
+            contextWindow: 128000
+- id: agent-default-model
+  config:
+    provider: wandb
+    model: deepseek-ai/DeepSeek-V3.1
+
+# From-scratch plugins, authored by prompting DSH's own agent (see each
+# plugin's README for the exact prompt used).
+- insert:
+    - id: todo-scanner
+      name: ./plugins/todo-scanner/src/index.ts
+    - id: break-reminder
+      name: ./plugins/break-reminder/src/index.ts

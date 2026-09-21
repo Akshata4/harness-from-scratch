@@ -1,0 +1,10 @@
+{
+  "name": "part-b-dsh-plugins",
+  "private": true,
+  "type": "module",
+  "description": "Local dependency root so from-scratch DSH plugins under plugins/ can resolve @deepseek-ai/* packages at runtime.",
+  "dependencies": {
+    "@deepseek-ai/cordis": "4.0.2",
+    "@deepseek-ai/dsh-tools": "0.1.5-rc.2"
+  }
+}
