@@ -5,6 +5,10 @@ DeepSeek AI's open-source agent runtime: an "everything is a plugin"
 architecture built on **Cordis**, where models, tools, sessions, sandboxing,
 and the UI are all swappable plugins configured via YAML.
 
+## Demo video
+
+[Part B walkthrough & demo](https://youtu.be/PFH9yRJJxeg)
+
 Installed via `npx` — no local clone or build needed:
 
 ```bash
