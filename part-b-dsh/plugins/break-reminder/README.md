@@ -1,13 +1,16 @@
 # Break-reminder heartbeat — a from-scratch DSH plugin
 
-A repeating timer that logs a friendly break reminder to the console every
-N minutes while the harness is running (default 20, configurable).
+A repeating timer that, every N minutes while the harness is running
+(default 20, configurable), logs a friendly break reminder to the console
+**and** pops up a real native macOS notification banner.
 
 Like the TODO scanner, this was authored by prompting DSH's own headless
-agent rather than hand-written — and it took *two* rounds of the agent
-debugging its own boot-time bugs before it worked, which is arguably the
-more honest and interesting demo of "Creator Mode" than a clean one-shot
-success would have been.
+agent rather than hand-written — and it took *four* rounds total of the
+agent debugging its own bugs before it fully worked (two to get the plugin
+loading at all, two more after a console-only reminder turned out to be
+useless in practice and a real OS notification was added), which is
+arguably a more honest and interesting demo of "Creator Mode" than a clean
+one-shot success would have been.
 
 ## Prompt 1 — initial authoring
 
@@ -68,6 +71,41 @@ It removed the conflicting default export, keeping only named exports
 (`name`, `inject`, `apply`) — matching the reference files' real pattern —
 and that was the actual fix.
 
+## Round 2: a console log is not a break reminder
+
+Once the plugin was actually loading and firing, testing it live surfaced
+a design problem, not a code bug: logging to the terminal running `dsh
+web` is not something anyone actually looks at — a break reminder that
+only a server log sees defeats its own purpose. Fixed by prompting the
+agent to add a real, visible notification:
+
+**Prompt 3 — add a native OS notification**
+
+```
+Update ./plugins/break-reminder/src/index.ts so that, in addition to the existing console.log output, each reminder tick also shows a real native macOS notification popup (a system banner, not just a log line). Use Node's child_process to run osascript with a 'display notification ... with title ...' AppleScript command. Guard it so it only runs when process.platform === 'darwin', and wrap the osascript call so any error is caught and logged instead of crashing the plugin (this must never crash the harness). Keep everything else in the file as-is. After editing, print the full final contents of the file.
+```
+
+**Bug 3 — broken shell quoting.** The generated fix built the `osascript`
+command as a single shell string: `` exec(`osascript -e '${appleScript}'`) ``.
+The notification message contains an apostrophe ("You've earned it!"),
+which prematurely closes the single-quoted shell argument. Verified this
+independently in a plain shell before reporting it — it really does fail
+with `unmatched "`. Reported with the diagnosis and a suggested direction:
+
+**Prompt 4 — fix the shell-quoting bug**
+
+```
+The showMacOSNotification function in ./plugins/break-reminder/src/index.ts is broken: it builds the osascript command as a shell string with exec(`osascript -e '${appleScript}'`), but the notification message contains an apostrophe ("You've earned it!"), which prematurely closes the single-quoted shell argument. I verified this fails with 'unmatched "' when run directly in a shell.
+
+Fix it by using child_process.execFile('osascript', ['-e', appleScript], callback) instead of exec() with a shell-interpolated string — passing arguments as an array avoids shell quoting entirely, so it's correct regardless of what characters are in the message (and is generally safer than building a shell string). Keep everything else in the file as-is. After fixing it, print the full final contents of the file.
+```
+
+It switched to `execFile('osascript', ['-e', appleScript], callback)` —
+arguments passed as an array, never interpolated into a shell string, so
+quoting is a non-issue regardless of message content. Verified independently
+(a standalone Node script using the same call succeeded) and live (the
+running plugin fired a real, visible notification with no error logged).
+
 ## Demo
 
 ```bash
@@ -89,8 +127,13 @@ EOF
 npx --yes @deepseek-ai/dsh web --patch ./dsh.patch.yml --patch /tmp/break-reminder-test-overlay.yml --no-open
 ```
 
-Verified result: the startup line
+Verified result (pre-notification version): the startup line
 (`[break-reminder] Plugin activated. Reminding every 0.2 minutes.`)
 appeared immediately, and the reminder fired twice, 12 seconds apart
 (`11:11:30 PM` and `11:11:42 PM`) — exact, repeating, matching the
 configured interval precisely.
+
+Verified again after adding the notification (`intervalMinutes: 0.5`, i.e.
+30 seconds): the console log fired with no error line, and a real macOS
+notification banner appeared on screen — confirmed directly by watching
+for it, not just inferred from the absence of an error.

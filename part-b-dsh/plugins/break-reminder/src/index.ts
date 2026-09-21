@@ -1,4 +1,5 @@
 import { Context } from '@deepseek-ai/cordis'
+import { exec, execFile } from 'child_process'
 
 /**
  * Plugin configuration interface
@@ -26,6 +27,24 @@ export function apply(ctx: Context, config: BreakReminderConfig = {}) {
   // Log startup message
   console.log(`[break-reminder] Plugin activated. Reminding every ${intervalMinutes} minutes.`)
 
+  /**
+   * Show macOS notification using osascript
+   * This is a best-effort feature that never crashes the plugin
+   */
+  function showMacOSNotification() {
+    if (process.platform !== 'darwin') {
+      return // Only run on macOS
+    }
+    
+    const appleScript = `display notification "Time to take a short break! Stand up, stretch, and hydrate. You've earned it! 🌟" with title "Break Reminder"`
+    
+    execFile('osascript', ['-e', appleScript], (error) => {
+      if (error) {
+        console.log('[break-reminder] Failed to show macOS notification:', error.message)
+      }
+    })
+  }
+
   // Create the repeating timer using ctx.interval for automatic cleanup
   ctx.interval(() => {
     const now = new Date()
@@ -37,6 +56,9 @@ export function apply(ctx: Context, config: BreakReminderConfig = {}) {
     console.log("   • Look away from the screen")
     console.log("   • Hydrate and refresh")
     console.log("   • You've earned it! 🌟\n")
+    
+    // Show macOS notification (will only work on macOS and won't crash on error)
+    showMacOSNotification()
   }, intervalMs)
 }
 
